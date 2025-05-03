@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Алгоритмы закраски</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <h1>Алгоритмы закраски</h1>
+  <p class="subtitle">Вариант 23: закраска замкнутых контуров</p>
+
+  <div class="container">
+    <div class="canvas-wrapper">
+      <canvas id="canvas" width="600" height="400"></canvas>
+    </div>
+
+    <div class="controls">
+      <!-- Инструменты закраски -->
+      <fieldset>
+        <legend>Цвет заливки</legend>
+        <div class="input-group">
+          <label for="fill-color">Цвет:</label>
+          <input id="fill-color" type="color" value="#ff8c42">
+        </div>
+      </fieldset>
+
+      <!-- Алгоритм заливки с затравкой -->
+      <fieldset>
+        <legend>Заливка с затравкой</legend>
+        <div class="description">
+          <p>Выберите точку внутри фигуры для заливки.</p>
+          <p class="small">Алгоритм рекурсивно закрашивает пиксели от выбранной точки.</p>
+        </div>
+        <div class="mode-group">
+          <input type="radio" id="seed-fill-mode" name="fill-mode" value="seed-fill" checked>
+          <label for="seed-fill-mode">Режим выбора точки</label>
+        </div>
+        <button id="apply-seed-fill" disabled>Применить</button>
+      </fieldset>
+
+      <!-- Алгоритм построчного сканирования -->
+      <fieldset>
+        <legend>Построчное сканирование</legend>
+        <div class="description">
+          <p>Закрашивает фигуру построчным методом.</p>
+          <p class="small">Анализирует пересечения с контуром по каждой строке.</p>
+        </div>
+        <button id="apply-scan-line">Применить</button>
+      </fieldset>
+
+      <!-- Кнопка сброса -->
+      <button id="reset">Сбросить изменения</button>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2023 - Лабораторная работа по компьютерной графике</p>
+  </footer>
+
+  <script>
+    // Передадим initial shape из Flask
+    const ORIGINAL_SHAPE = JSON.parse('{{ shape|tojson|safe }}');
+  </script>
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+
+</html> 
