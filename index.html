@@ -7,25 +7,33 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <h1>Алгоритмы закраски</h1>
+    <p class="subtitle">Интерактивная закраска замкнутых контуров</p>
+
     <div class="container">
-        <canvas id="canvas" width="600" height="600"></canvas>
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="600" height="600"></canvas>
+        </div>
         
         <div class="controls">
-            <div class="control-group">
-                <h3>Выбор цвета</h3>
-                <input type="color" id="fillColor" value="#ff0000">
-            </div>
+            <fieldset>
+                <legend>Выбор цвета</legend>
+                <div class="input-group">
+                    <label for="fillColor">Цвет:</label>
+                    <input type="color" id="fillColor" value="#ff0000">
+                </div>
+            </fieldset>
 
-            <div class="control-group">
-                <h3>Алгоритмы закраски</h3>
-                <button id="seedFill">Заливка с затравкой</button>
-                <button id="scanlineFill">Построчное сканирование</button>
-            </div>
+            <fieldset>
+                <legend>Алгоритмы закраски</legend>
+                <button id="seedFill" data-op="seedFill">Заливка с затравкой</button>
+                <button id="scanlineFill" data-op="scanlineFill">Построчное сканирование</button>
+            </fieldset>
 
-            <div class="control-group">
-                <h3>Управление</h3>
-                <button id="reset">Сбросить</button>
-            </div>
+            <fieldset>
+                <legend>Управление</legend>
+                <button id="reset">Сбросить все изменения</button>
+            </fieldset>
 
             <div class="info">
                 <p>Инструкция:</p>
