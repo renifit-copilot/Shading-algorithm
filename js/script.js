@@ -29,9 +29,13 @@ const ORIGINAL_SHAPE = [
  * Класс для управления приложением закраски
  */
 class FillApp {
+	/**
+	 * Создает экземпляр приложения закраски
+	 * Инициализирует состояние, обработчики событий и отрисовывает фигуру
+	 */
 	constructor() {
 		// Инициализация состояния
-		this.points = JSON.parse(JSON.stringify(ORIGINAL_SHAPE)); // Клонирование фигуры
+		this.shape = JSON.parse(JSON.stringify(ORIGINAL_SHAPE)); // Клонирование фигуры
 		this.isDrawingMode = false;
 		this.currentFillColor = document.getElementById('fillColor').value;
 		this.currentBorderColor = document.getElementById('borderColor').value;
@@ -40,11 +44,11 @@ class FillApp {
 		this.initEventHandlers();
 		
 		// Первоначальная отрисовка
-		this.drawFigure();
+		this.drawShape();
 	}
 
 	/**
-	 * Инициализация обработчиков событий
+	 * Инициализация обработчиков событий для кнопок и элементов управления
 	 */
 	initEventHandlers() {
 		// Обработчик изменения цвета заливки
@@ -57,7 +61,7 @@ class FillApp {
 			this.currentBorderColor = e.target.value;
 			// Перерисовываем фигуру при изменении цвета контура
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			this.drawFigure();
+			this.drawShape();
 		});
 		
 		// Обработчик заливки с затравкой
@@ -87,30 +91,38 @@ class FillApp {
 		// Обработчик сброса
 		document.getElementById('reset').addEventListener('click', () => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			this.drawFigure();
+			this.drawShape();
 		});
 	}
 	
 	/**
-	 * Отрисовка фигуры
+	 * Отрисовка фигуры на холсте с текущим цветом контура
 	 */
-	drawFigure() {
+	drawShape() {
 		ctx.beginPath();
 		ctx.strokeStyle = this.currentBorderColor;
 		ctx.lineWidth = 2;
 		
-		ctx.moveTo(...this.points[0]);
-		for (let i = 1; i < this.points.length; i++) {
-			ctx.lineTo(...this.points[i]);
+		ctx.moveTo(...this.shape[0]);
+		for (let i = 1; i < this.shape.length; i++) {
+			ctx.lineTo(...this.shape[i]);
 		}
 		
-		ctx.lineTo(...this.points[0]);
+		ctx.lineTo(...this.shape[0]);
 		
 		ctx.stroke();
 	}
 	
 	/**
 	 * Проверка, является ли цвет пикселя примерно равным другому цвету
+	 * @param {number} r1 - Красный компонент первого цвета
+	 * @param {number} g1 - Зеленый компонент первого цвета
+	 * @param {number} b1 - Синий компонент первого цвета
+	 * @param {number} r2 - Красный компонент второго цвета
+	 * @param {number} g2 - Зеленый компонент второго цвета
+	 * @param {number} b2 - Синий компонент второго цвета
+	 * @param {number} [tolerance=10] - Допустимое отклонение для каждого компонента
+	 * @returns {boolean} Результат сравнения цветов
 	 */
 	isSimilarColor(r1, g1, b1, r2, g2, b2, tolerance = 10) {
 		return Math.abs(r1 - r2) <= tolerance &&
@@ -120,13 +132,20 @@ class FillApp {
 	
 	/**
 	 * Алгоритм заливки с затравкой
+	 * @param {number} startX - X-координата начальной точки (затравки)
+	 * @param {number} startY - Y-координата начальной точки (затравки)
+	 * @param {string} fillColor - Цвет заливки в HEX-формате (#RRGGBB)
 	 */
 	seedFill(startX, startY, fillColor) {
 		// Получаем данные изображения БЕЗ очистки холста
 		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 		const pixels = imageData.data;
 		
-		// Переводим fillColor (hex) в RGB
+		/**
+		 * Преобразует HEX-цвет в массив RGB компонентов
+		 * @param {string} hex - Цвет в HEX-формате (#RRGGBB)
+		 * @returns {Array<number>} Массив [r, g, b] компонентов цвета
+		 */
 		const hexToRgb = (hex) => {
 			const r = parseInt(hex.slice(1, 3), 16);
 			const g = parseInt(hex.slice(3, 5), 16);
@@ -153,7 +172,12 @@ class FillApp {
 		// Стек для алгоритма
 		const stack = [[startX, startY]];
 		
-		// Добавляем функцию проверки цвета пикселя
+		/**
+		 * Проверяет, соответствует ли цвет пикселя целевому цвету
+		 * @param {number} x - X-координата пикселя
+		 * @param {number} y - Y-координата пикселя
+		 * @returns {boolean} true, если цвет пикселя соответствует целевому
+		 */
 		const isTargetColor = (x, y) => {
 			const i = (y * canvas.width + x) * 4;
 			return this.isSimilarColor(
@@ -162,7 +186,12 @@ class FillApp {
 			);
 		};
 		
-		// Проверяем, не является ли пиксель границей
+		/**
+		 * Проверяет, является ли пиксель границей
+		 * @param {number} x - X-координата пикселя
+		 * @param {number} y - Y-координата пикселя
+		 * @returns {boolean} true, если пиксель является границей
+		 */
 		const isBorderColor = (x, y) => {
 			const i = (y * canvas.width + x) * 4;
 			return this.isSimilarColor(
@@ -171,7 +200,11 @@ class FillApp {
 			);
 		};
 		
-		// Закрашиваем пиксель
+		/**
+		 * Закрашивает пиксель выбранным цветом
+		 * @param {number} x - X-координата пикселя
+		 * @param {number} y - Y-координата пикселя
+		 */
 		const setPixel = (x, y) => {
 			const i = (y * canvas.width + x) * 4;
 			pixels[i] = fillR;
@@ -205,18 +238,19 @@ class FillApp {
 		ctx.putImageData(imageData, 0, 0);
 		
 		// Перерисовываем только контур
-		this.drawFigure();
+		this.drawShape();
 	}
 	
 	/**
 	 * Алгоритм построчного сканирования
+	 * @param {string} fillColor - Цвет заливки в HEX-формате (#RRGGBB)
 	 */
 	scanlineFill(fillColor) {
 		// Получаем границы фигуры для оптимизации
-		const minX = Math.min(...this.points.map(p => p[0])) - 1;
-		const maxX = Math.max(...this.points.map(p => p[0])) + 1;
-		const minY = Math.min(...this.points.map(p => p[1])) - 1;
-		const maxY = Math.max(...this.points.map(p => p[1])) + 1;
+		const minX = Math.min(...this.shape.map(p => p[0])) - 1;
+		const maxX = Math.max(...this.shape.map(p => p[0])) + 1;
+		const minY = Math.min(...this.shape.map(p => p[1])) - 1;
+		const maxY = Math.max(...this.shape.map(p => p[1])) + 1;
 		
 		// Создаем временный холст для отрисовки только новой заливки
 		const tempCanvas = document.createElement('canvas');
@@ -228,18 +262,22 @@ class FillApp {
 		tempCtx.beginPath();
 		tempCtx.strokeStyle = this.currentBorderColor;
 		tempCtx.lineWidth = 2;
-		tempCtx.moveTo(...this.points[0]);
-		for (let i = 1; i < this.points.length; i++) {
-			tempCtx.lineTo(...this.points[i]);
+		tempCtx.moveTo(...this.shape[0]);
+		for (let i = 1; i < this.shape.length; i++) {
+			tempCtx.lineTo(...this.shape[i]);
 		}
-		tempCtx.lineTo(...this.points[0]);
+		tempCtx.lineTo(...this.shape[0]);
 		tempCtx.stroke();
 		
 		// Получаем данные изображения временного холста
 		const tempImageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
 		const tempPixels = tempImageData.data;
 		
-		// Переводим borderColor (hex) в RGB
+		/**
+		 * Преобразует HEX-цвет в массив RGB компонентов
+		 * @param {string} hex - Цвет в HEX-формате (#RRGGBB)
+		 * @returns {Array<number>} Массив [r, g, b] компонентов цвета
+		 */
 		const hexToRgb = (hex) => {
 			const r = parseInt(hex.slice(1, 3), 16);
 			const g = parseInt(hex.slice(3, 5), 16);
@@ -249,7 +287,12 @@ class FillApp {
 		
 		const [borderR, borderG, borderB] = hexToRgb(this.currentBorderColor);
 		
-		// Проверяем, является ли пиксель границей
+		/**
+		 * Проверяет, является ли пиксель границей
+		 * @param {number} x - X-координата пикселя
+		 * @param {number} y - Y-координата пикселя
+		 * @returns {boolean} true, если пиксель является границей
+		 */
 		const isBorderPixel = (x, y) => {
 			const idx = (y * canvas.width + x) * 4;
 			// Проверяем, соответствует ли цвет пикселя текущему цвету границы
@@ -266,9 +309,9 @@ class FillApp {
 			const intersections = [];
 			
 			// Находим пересечения с отрезками
-			for (let i = 0; i < this.points.length; i++) {
-				const [x1, y1] = this.points[i];
-				const [x2, y2] = this.points[(i + 1) % this.points.length]; // Используем замкнутый контур
+			for (let i = 0; i < this.shape.length; i++) {
+				const [x1, y1] = this.shape[i];
+				const [x2, y2] = this.shape[(i + 1) % this.shape.length]; // Используем замкнутый контур
 				
 				// Проверяем, пересекает ли горизонтальная линия отрезок
 				if ((y1 <= y && y < y2) || (y2 <= y && y < y1)) {
@@ -324,7 +367,7 @@ class FillApp {
 		
 		
 		// Перерисовываем контур
-		this.drawFigure();
+		this.drawShape();
 	}
 }
 
