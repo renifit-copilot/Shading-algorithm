@@ -34,6 +34,7 @@ class FillApp {
 		this.points = JSON.parse(JSON.stringify(ORIGINAL_SHAPE)); // Клонирование фигуры
 		this.isDrawingMode = false;
 		this.currentFillColor = document.getElementById('fillColor').value;
+		this.currentBorderColor = document.getElementById('borderColor').value;
 		
 		// Инициализация обработчиков событий
 		this.initEventHandlers();
@@ -41,14 +42,22 @@ class FillApp {
 		// Первоначальная отрисовка
 		this.drawFigure();
 	}
-	
+
 	/**
 	 * Инициализация обработчиков событий
 	 */
 	initEventHandlers() {
-		// Обработчик изменения цвета
+		// Обработчик изменения цвета заливки
 		document.getElementById('fillColor').addEventListener('input', (e) => {
 			this.currentFillColor = e.target.value;
+		});
+		
+		// Обработчик изменения цвета контура
+		document.getElementById('borderColor').addEventListener('input', (e) => {
+			this.currentBorderColor = e.target.value;
+			// Перерисовываем фигуру при изменении цвета контура
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			this.drawFigure();
 		});
 		
 		// Обработчик заливки с затравкой
@@ -87,7 +96,7 @@ class FillApp {
 	 */
 	drawFigure() {
 		ctx.beginPath();
-		ctx.strokeStyle = CONFIG.colors.border;
+		ctx.strokeStyle = this.currentBorderColor;
 		ctx.lineWidth = 2;
 		
 		ctx.moveTo(...this.points[0]);
@@ -139,7 +148,7 @@ class FillApp {
 		}
 		
 		// Получаем цвет границы
-		const [borderR, borderG, borderB] = [0, 0, 255]; // Синий цвет границы
+		const [borderR, borderG, borderB] = hexToRgb(this.currentBorderColor);
 		
 		// Стек для алгоритма
 		const stack = [[startX, startY]];
@@ -217,7 +226,7 @@ class FillApp {
 		
 		// Рисуем контур на временном холсте
 		tempCtx.beginPath();
-		tempCtx.strokeStyle = CONFIG.colors.border;
+		tempCtx.strokeStyle = this.currentBorderColor;
 		tempCtx.lineWidth = 2;
 		tempCtx.moveTo(...this.points[0]);
 		for (let i = 1; i < this.points.length; i++) {
@@ -230,10 +239,24 @@ class FillApp {
 		const tempImageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
 		const tempPixels = tempImageData.data;
 		
+		// Переводим borderColor (hex) в RGB
+		const hexToRgb = (hex) => {
+			const r = parseInt(hex.slice(1, 3), 16);
+			const g = parseInt(hex.slice(3, 5), 16);
+			const b = parseInt(hex.slice(5, 7), 16);
+			return [r, g, b];
+		};
+		
+		const [borderR, borderG, borderB] = hexToRgb(this.currentBorderColor);
+		
 		// Проверяем, является ли пиксель границей
 		const isBorderPixel = (x, y) => {
 			const idx = (y * canvas.width + x) * 4;
-			return tempPixels[idx + 2] > 200; // Синий компонент (для синей границы)
+			// Проверяем, соответствует ли цвет пикселя текущему цвету границы
+			return this.isSimilarColor(
+				tempPixels[idx], tempPixels[idx + 1], tempPixels[idx + 2],
+				borderR, borderG, borderB
+			);
 		};
 		
 		// Проходим по всей области фигуры
@@ -279,14 +302,6 @@ class FillApp {
 		const currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 		const currentPixels = currentImageData.data;
 		
-		// Переводим fillColor (hex) в RGB
-		const hexToRgb = (hex) => {
-			const r = parseInt(hex.slice(1, 3), 16);
-			const g = parseInt(hex.slice(3, 5), 16);
-			const b = parseInt(hex.slice(5, 7), 16);
-			return [r, g, b];
-		};
-		
 		const [fillR, fillG, fillB] = hexToRgb(fillColor);
 		
 		// Объединяем изображения
@@ -306,6 +321,7 @@ class FillApp {
 		
 		// Обновляем основной холст
 		ctx.putImageData(currentImageData, 0, 0);
+		
 		
 		// Перерисовываем контур
 		this.drawFigure();
